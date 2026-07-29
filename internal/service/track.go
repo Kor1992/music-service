@@ -2,14 +2,9 @@ package service
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
-	"fmt"
-	"log"
 	"music/internal/domain"
 	"music/internal/repository"
-	"net/http"
-	"strings"
 )
 
 type TrackService struct {
@@ -46,36 +41,38 @@ func (s *TrackService) UpdateStatus(ctx context.Context, id int, status, audioUR
 }
 
 func (s *TrackService) GenerateTrack(ctx context.Context, trackID int) {
-	track, err := s.repo.GetByID(ctx, trackID)
-	if err != nil {
-		log.Printf("GenerateTrack: failed to get track %d: %v", trackID, err)
-		return
-	}
+	// track, err := s.repo.GetByID(ctx, trackID)
+	// if err != nil {
+	// 	log.Printf("GenerateTrack: failed to get track %d: %v", trackID, err)
+	// 	return
+	// }
 
-	apiURL := "https://api.riffusion.com/v1/generate"
-	body := fmt.Sprintf(`{"prompt":"%s","duration":30}`, track.Prompt)
-	req, err := http.NewRequestWithContext(ctx, "POST", apiURL, strings.NewReader(body))
-	if err != nil {
-		log.Printf("Riffusion request failed: %v", err)
-		s.repo.UpdateStatus(ctx, trackID, "failed", "")
-		return
-	}
-	req.Header.Set("Content-Type", "application/json")
+	// apiURL := "https://api.riffusion.com/v1/generate"
+	// body := fmt.Sprintf(`{"prompt":"%s","duration":30}`, track.Prompt)
+	// req, err := http.NewRequestWithContext(ctx, "POST", apiURL, strings.NewReader(body))
+	// if err != nil {
+	// 	log.Printf("Riffusion request failed: %v", err)
+	// 	s.repo.UpdateStatus(ctx, trackID, "failed", "")
+	// 	return
+	// }
+	// req.Header.Set("Content-Type", "application/json")
 
-	resp, err := http.DefaultClient.Do(req)
+	// resp, err := http.DefaultClient.Do(req)
 
-	if err != nil {
-		log.Printf("Riffusion API error: %v", err)
-		s.repo.UpdateStatus(ctx, trackID, "failed", "")
-		return
-	}
-	defer resp.Body.Close()
+	// if err != nil {
+	// 	log.Printf("Riffusion API error: %v", err)
+	// 	s.repo.UpdateStatus(ctx, trackID, "failed", "")
+	// 	return
+	// }
+	// defer resp.Body.Close()
 
-	var riffResp struct {
-		AudioURL string `json:"audio_url"`
-	}
+	// var riffResp struct {
+	// 	AudioURL string `json:"audio_url"`
+	// }
 
-	json.NewDecoder(resp.Body).Decode(&riffResp)
+	// json.NewDecoder(resp.Body).Decode(&riffResp)
 
-	s.repo.UpdateStatus(ctx, trackID, "ready", riffResp.AudioURL)
+	// s.repo.UpdateStatus(ctx, trackID, "ready", riffResp.AudioURL)
+	testAudioURL := "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3"
+	s.repo.UpdateStatus(ctx, trackID, "ready", testAudioURL)
 }
