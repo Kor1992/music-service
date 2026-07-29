@@ -63,7 +63,11 @@ func main() {
 	mux.HandleFunc("POST /auth/login", authHandler.Login)
 
 	// Публичные маршруты треков
-	mux.HandleFunc("GET /tracks", trackHandler.List)
+	mux.Handle("GET /tracks",
+		middleware.AuthMiddleware(jwtSecret)(
+			http.HandlerFunc(trackHandler.List),
+		),
+	)
 	mux.HandleFunc("GET /tracks/{id}", trackHandler.GetById)
 
 	// Защищённый маршрут создания трека (JWT + проверка подписки)
