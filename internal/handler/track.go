@@ -92,7 +92,9 @@ func (h *TrackHandler) Generate(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	go h.svc.GenerateTrack(r.Context(), track.ID)
+	h.svc.GenerateTrack(r.Context(), track.ID)
+
+	track, _ = h.svc.GetByID(r.Context(), track.ID)
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
