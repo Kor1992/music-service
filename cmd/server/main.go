@@ -89,6 +89,9 @@ func main() {
 		),
 	)
 
+	fs := http.FileServer(http.Dir("./public"))
+	mux.Handle("/", fs)
+
 	loggedMux := middleware.Logging(mux)
 
 	// ---------- Старт ----------
