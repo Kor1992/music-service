@@ -1,0 +1,2 @@
+DROP TABLE IF EXISTS music.tracks;
+DROP SCHEMA IF EXISTS music;
