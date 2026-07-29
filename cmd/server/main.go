@@ -85,12 +85,6 @@ func main() {
 
 	mux.HandleFunc("GET /tracks/{id}/stream", trackHandler.Stream)
 
-	mux.Handle("GET /tracks/{id}/stream",
-		middleware.AuthMiddleware(jwtSecret)(
-			http.HandlerFunc(trackHandler.Stream),
-		),
-	)
-
 	fs := http.FileServer(http.Dir("./public"))
 	mux.Handle("/", fs)
 
