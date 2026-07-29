@@ -63,16 +63,15 @@ func (h *TrackHandler) GetById(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *TrackHandler) List(w http.ResponseWriter, r *http.Request) {
-	tracks, err := h.svc.List(r.Context())
+	userID, _ := r.Context().Value(middleware.UserIDKey).(int)
+	tracks, err := h.svc.ListByUser(r.Context(), userID)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(tracks)
 }
-
 func (h *TrackHandler) Generate(w http.ResponseWriter, r *http.Request) {
 	var req struct {
 		Title  string `json:"title"`

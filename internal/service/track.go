@@ -41,6 +41,10 @@ func (s *TrackService) List(ctx context.Context) ([]*domain.Track, error) {
 	return s.repo.List(ctx)
 }
 
+func (s *TrackService) ListByUser(ctx context.Context, userID int) ([]*domain.Track, error) {
+	return s.repo.ListByUser(ctx, userID)
+}
+
 func (s *TrackService) UpdateStatus(ctx context.Context, id int, status, audioURL string) error {
 	return s.repo.UpdateStatus(ctx, id, status, audioURL)
 }

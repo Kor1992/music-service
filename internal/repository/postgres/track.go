@@ -112,6 +112,26 @@ func (r *TrackRepo) List(ctx context.Context) ([]*domain.Track, error) {
 	return tracks, nil
 }
 
+func (r *TrackRepo) ListByUser(ctx context.Context, userID int) ([]*domain.Track, error) {
+	query := `SELECT id, title, prompt, audio_url, status, user_id, created_at
+              FROM music.tracks WHERE user_id = $1 ORDER BY created_at DESC`
+	rows, err := r.pool.Query(ctx, query, userID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var tracks []*domain.Track
+	for rows.Next() {
+		t := &domain.Track{}
+		if err := rows.Scan(&t.ID, &t.Title, &t.Prompt, &t.AudioURL, &t.Status, &t.UserID, &t.CreatedAt); err != nil {
+			return nil, err
+		}
+		tracks = append(tracks, t)
+	}
+	return tracks, rows.Err()
+}
+
 func (r *TrackRepo) UpdateStatus(ctx context.Context, id int, status string, audioURL string) error {
 	query := `
 	UPDATE music.tracks
