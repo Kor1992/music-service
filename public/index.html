@@ -205,20 +205,44 @@
             }
         }
 
-        async function loadTracks() {
+       async function loadTracks() {
+    if (!token) {
+        document.getElementById('tracksList').innerHTML = '<div style="color: var(--text-secondary)">Please log in to see your tracks.</div>';
+        return;
+    }
     try {
         const res = await fetch(API + '/tracks', {
             headers: { 'Authorization': 'Bearer ' + token }
         });
         if (res.status === 401) {
-            // Токен истёк или отсутствует — просим войти заново
-            document.getElementById('tracksList').innerHTML = '<div style="color: var(--danger)">Session expired. Please <a href="#" onclick="logout()">log in</a> again.</div>';
+            token = '';
+            document.getElementById('tracksList').innerHTML = '<div style="color: var(--danger)">Session expired. Please refresh and log in again.</div>';
+            return;
+        }
+        if (!res.ok) {
+            document.getElementById('tracksList').innerHTML = '<div style="color: var(--danger)">Failed to load tracks.</div>';
             return;
         }
         const data = await res.json();
-        // ... остальная логика рендера ...
+        const list = document.getElementById('tracksList');
+        if (!Array.isArray(data) || data.length === 0) {
+            list.innerHTML = '<div style="color: var(--text-secondary)">No tracks yet. Generate your first track!</div>';
+            return;
+        }
+        list.innerHTML = data.map(t => `
+            <div class="track-item">
+                <div>
+                    <strong>${escapeHtml(t.title)}</strong><br/>
+                    <small style="color: var(--text-secondary)">${escapeHtml(t.prompt)}</small>
+                    <span class="status ${t.status}">${t.status}</span>
+                </div>
+                ${t.status === 'ready' && t.audio_url
+                    ? `<audio controls preload="none"><source src="${API}/tracks/${t.id}/stream" type="audio/mpeg" /></audio>`
+                    : ''}
+            </div>
+        `).join('');
     } catch (err) {
-        document.getElementById('tracksList').innerHTML = '<div style="color: var(--danger)">Network error. Please refresh or log in again.</div>';
+        document.getElementById('tracksList').innerHTML = '<div style="color: var(--danger)">Network error. Please refresh.</div>';
     }
 }
 
