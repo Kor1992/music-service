@@ -12,3 +12,6 @@ COPY --from=builder /app/migrations /migrations
 COPY --from=builder /app/public /public
 EXPOSE 8080
 CMD ["/server"]
+
+
+# force rebuild v3
