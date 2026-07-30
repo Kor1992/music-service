@@ -52,6 +52,7 @@ func (s *TrackService) UpdateStatus(ctx context.Context, id int, status, audioUR
 }
 
 func (s *TrackService) GenerateTrack(ctx context.Context, trackID int) {
+	log.Println("Generate handler called")
 	track, err := s.repo.GetByID(ctx, trackID)
 	if err != nil {
 		log.Printf("GenerateTrack: failed to get track %d: %v", trackID, err)

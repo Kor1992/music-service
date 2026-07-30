@@ -39,6 +39,7 @@ func main() {
 		log.Fatal("Database is not ready:", err)
 	}
 	log.Println("Connected to database")
+	log.Println("=== BUILD VERSION: 3 ===")
 
 	// ---------- Инициализация ----------
 	userRepo := postgres.NewUserRepo(pool)
