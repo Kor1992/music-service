@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log"
 	"music/internal/middleware"
 	"music/internal/service"
 	"net/http"
@@ -65,7 +66,12 @@ func (h *TrackHandler) GetById(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *TrackHandler) List(w http.ResponseWriter, r *http.Request) {
-	userID, _ := r.Context().Value(middleware.UserIDKey).(int)
+	userID, ok := r.Context().Value(middleware.UserIDKey).(int)
+	if !ok || userID == 0 {
+		http.Error(w, "user not authenticated", http.StatusUnauthorized)
+		return
+	}
+	log.Printf("List tracks for userID: %d", userID)
 	tracks, err := h.svc.ListByUser(r.Context(), userID)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
