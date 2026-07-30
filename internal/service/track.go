@@ -2,9 +2,16 @@ package service
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
+	"fmt"
+	"log"
 	"music/internal/domain"
 	"music/internal/repository"
+	"net/http"
+	"os"
+	"strings"
+	"time"
 )
 
 type TrackService struct {
@@ -45,38 +52,65 @@ func (s *TrackService) UpdateStatus(ctx context.Context, id int, status, audioUR
 }
 
 func (s *TrackService) GenerateTrack(ctx context.Context, trackID int) {
-	// track, err := s.repo.GetByID(ctx, trackID)
-	// if err != nil {
-	// 	log.Printf("GenerateTrack: failed to get track %d: %v", trackID, err)
-	// 	return
-	// }
+	track, err := s.repo.GetByID(ctx, trackID)
+	if err != nil {
+		log.Printf("GenerateTrack: failed to get track %d: %v", trackID, err)
+		return
+	}
 
-	// apiURL := "https://api.riffusion.com/v1/generate"
-	// body := fmt.Sprintf(`{"prompt":"%s","duration":30}`, track.Prompt)
-	// req, err := http.NewRequestWithContext(ctx, "POST", apiURL, strings.NewReader(body))
-	// if err != nil {
-	// 	log.Printf("Riffusion request failed: %v", err)
-	// 	s.repo.UpdateStatus(ctx, trackID, "failed", "")
-	// 	return
-	// }
-	// req.Header.Set("Content-Type", "application/json")
+	apiURL := "https://api.replicate.com/v1/predictions"
+	requestBody := fmt.Sprintf(`{
+        "version": "8fa09c7d0e1b38c5e7adc0cf44c5e6e6e7c3d15f7e7b8f7c4d4e7a8a3b3e8c8",
+        "input": {
+            "prompt": %q,
+            "duration": 30
+        }
+    }`, track.Prompt)
 
-	// resp, err := http.DefaultClient.Do(req)
+	req, err := http.NewRequestWithContext(ctx, "POST", apiURL, strings.NewReader(requestBody))
 
-	// if err != nil {
-	// 	log.Printf("Riffusion API error: %v", err)
-	// 	s.repo.UpdateStatus(ctx, trackID, "failed", "")
-	// 	return
-	// }
-	// defer resp.Body.Close()
+	if err != nil {
+		log.Printf("Replicate request failed: %v", err)
+		s.repo.UpdateStatus(ctx, trackID, "failed", "")
+		return
+	}
 
-	// var riffResp struct {
-	// 	AudioURL string `json:"audio_url"`
-	// }
+	req.Header.Set("Authorization", "Token "+os.Getenv("REPLICATE_API_TOKEN"))
+	req.Header.Set("Content-Type", "application/json")
 
-	// json.NewDecoder(resp.Body).Decode(&riffResp)
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		log.Printf("Replicate API error: %v", err)
+		s.repo.UpdateStatus(ctx, trackID, "failed", "")
+		return
+	}
 
-	// s.repo.UpdateStatus(ctx, trackID, "ready", riffResp.AudioURL)
-	testAudioURL := "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3"
-	s.repo.UpdateStatus(ctx, trackID, "ready", testAudioURL)
+	defer resp.Body.Close()
+
+	var prediction struct {
+		ID     string `json:"id"`
+		Status string `json:"status"`
+		Output struct {
+			Audio string `json:"audio"`
+		} `json:"output"`
+	}
+
+	json.NewDecoder(resp.Body).Decode(&prediction)
+
+	for prediction.Status != "succeeded" && prediction.Status != "failed" {
+		time.Sleep(5 * time.Second)
+		req, _ := http.NewRequestWithContext(ctx, "GET", apiURL+"/"+prediction.ID, nil)
+		req.Header.Set("Authorization", "Token "+os.Getenv("REPLICATE_API_TOKEN"))
+		resp, _ := http.DefaultClient.Do(req)
+		if resp != nil {
+			json.NewDecoder(resp.Body).Decode(&prediction)
+			resp.Body.Close()
+		}
+	}
+
+	if prediction.Status == "succeeded" && prediction.Output.Audio != "" {
+		s.repo.UpdateStatus(ctx, trackID, "ready", prediction.Output.Audio)
+	} else {
+		s.repo.UpdateStatus(ctx, trackID, "failed", "")
+	}
 }
