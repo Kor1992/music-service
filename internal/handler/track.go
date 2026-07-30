@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -8,6 +9,7 @@ import (
 	"music/internal/service"
 	"net/http"
 	"strconv"
+	"time"
 )
 
 type TrackHandler struct {
@@ -91,9 +93,15 @@ func (h *TrackHandler) Generate(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	h.svc.GenerateTrack(r.Context(), track.ID)
+	ctx, cancel := context.WithTimeout(
+		context.Background(),
+		5*time.Minute,
+	)
 
-	track, _ = h.svc.GetByID(r.Context(), track.ID)
+	go func() {
+		defer cancel()
+		h.svc.GenerateTrack(ctx, track.ID)
+	}()
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
