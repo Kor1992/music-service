@@ -45,14 +45,14 @@ func main() {
 	// ---------- Инициализация ----------
 	userRepo := postgres.NewUserRepo(pool)
 	trackRepo := postgres.NewTrackRepo(pool)
+	queueRepo := postgres.NewQueueRepo(pool)
 
 	authService := service.NewAuthService(userRepo)
 	authHandler := handler.NewAuthHandler(authService)
 
 	trackSvc := service.NewTrackService(trackRepo)
-	trackHandler := handler.NewTrackHandler(trackSvc)
+	trackHandler := handler.NewTrackHandler(trackSvc, queueRepo)
 
-	queueRepo := postgres.NewQueueRepo(pool)
 	generatorWorker := worker.NewGeneratorWorker(queueRepo, trackSvc)
 	ctxWorker, cancelWorker := context.WithCancel(context.Background())
 	go generatorWorker.Start(ctxWorker)

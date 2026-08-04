@@ -17,10 +17,8 @@ type TrackHandler struct {
 	queueRepo repository.QueueRepository
 }
 
-func NewTrackHandler(svc *service.TrackService) *TrackHandler {
-	return &TrackHandler{
-		svc: svc,
-	}
+func NewTrackHandler(svc *service.TrackService, queueRepo repository.QueueRepository) *TrackHandler {
+	return &TrackHandler{svc: svc, queueRepo: queueRepo}
 }
 
 func (h *TrackHandler) Create(w http.ResponseWriter, r *http.Request) {
