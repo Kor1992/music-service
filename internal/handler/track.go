@@ -1,20 +1,20 @@
 package handler
 
 import (
-	"context"
 	"encoding/json"
 	"fmt"
 	"io"
 	"log"
 	"music/internal/middleware"
+	"music/internal/repository"
 	"music/internal/service"
 	"net/http"
 	"strconv"
-	"time"
 )
 
 type TrackHandler struct {
-	svc *service.TrackService
+	svc       *service.TrackService
+	queueRepo repository.QueueRepository
 }
 
 func NewTrackHandler(svc *service.TrackService) *TrackHandler {
@@ -85,7 +85,6 @@ func (h *TrackHandler) Generate(w http.ResponseWriter, r *http.Request) {
 		Title  string `json:"title"`
 		Prompt string `json:"prompt"`
 	}
-
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		http.Error(w, "invalid JSON", http.StatusBadRequest)
 		return
@@ -99,15 +98,10 @@ func (h *TrackHandler) Generate(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	ctx, cancel := context.WithTimeout(
-		context.Background(),
-		5*time.Minute,
-	)
-
-	go func() {
-		defer cancel()
-		h.svc.GenerateTrack(ctx, track.ID)
-	}()
+	if err := h.queueRepo.Enqueue(r.Context(), track.ID); err != nil {
+		http.Error(w, "failed to enqueue generation", http.StatusInternalServerError)
+		return
+	}
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)

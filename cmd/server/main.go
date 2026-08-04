@@ -14,6 +14,7 @@ import (
 	"music/internal/middleware"
 	"music/internal/repository/postgres"
 	"music/internal/service"
+	"music/internal/worker"
 )
 
 func main() {
@@ -50,6 +51,12 @@ func main() {
 
 	trackSvc := service.NewTrackService(trackRepo)
 	trackHandler := handler.NewTrackHandler(trackSvc)
+
+	queueRepo := postgres.NewQueueRepo(pool)
+	generatorWorker := worker.NewGeneratorWorker(queueRepo, trackSvc)
+	ctxWorker, cancelWorker := context.WithCancel(context.Background())
+	go generatorWorker.Start(ctxWorker)
+	defer cancelWorker()
 
 	jwtSecret := os.Getenv("JWT_SECRET")
 	if jwtSecret == "" {
