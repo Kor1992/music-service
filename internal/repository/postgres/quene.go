@@ -58,3 +58,11 @@ func (r *QueueRepo) UpdateStatus(ctx context.Context, id int, status string) err
 	)
 	return err
 }
+
+func (r *QueueRepo) CancelByTrackID(ctx context.Context, trackID int) error {
+	_, err := r.pool.Exec(ctx,
+		"UPDATE music.generation_queue SET status = 'cancelled' WHERE track_id = $1 AND status = 'pending'",
+		trackID,
+	)
+	return err
+}

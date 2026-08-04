@@ -39,6 +39,12 @@ func (w *GeneratorWorker) Start(ctx context.Context) {
 				continue
 			}
 
+			track, err := w.trackService.GetByID(ctx, item.TrackID)
+			if err != nil || track.Status == "cancelled" {
+				w.queueRepo.UpdateStatus(ctx, item.ID, "cancelled")
+				continue
+			}
+
 			log.Printf("Worker: processing task %d for track %d", item.ID, item.TrackID)
 			w.trackService.GenerateTrack(ctx, item.TrackID)
 

@@ -106,6 +106,35 @@ func (h *TrackHandler) Generate(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(track)
 }
 
+func (h *TrackHandler) CancelGeneration(w http.ResponseWriter, r *http.Request) {
+	idStr := r.PathValue("id")
+	id, err := strconv.Atoi(idStr)
+	if err != nil {
+		http.Error(w, "invalid id", http.StatusBadRequest)
+		return
+	}
+
+	userId, _ := r.Context().Value(middleware.UserIDKey).(int)
+	track, err := h.svc.GetByID(r.Context(), id)
+	if err != nil || track.UserID != userId {
+		http.Error(w, "track not found", http.StatusNotFound)
+		return
+	}
+
+	if err := h.queueRepo.CancelByTrackID(r.Context(), id); err != nil {
+		http.Error(w, "failed to cancel generation", http.StatusInternalServerError)
+		return
+	}
+
+	if err := h.svc.UpdateStatus(r.Context(), id, "cancelled", ""); err != nil {
+		http.Error(w, "failed to update track status", http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]string{"status": "cancelled"})
+}
+
 func (h *TrackHandler) Stream(w http.ResponseWriter, r *http.Request) {
 	idStr := r.PathValue("id")
 	id, err := strconv.Atoi(idStr)

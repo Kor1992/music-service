@@ -95,6 +95,14 @@ func main() {
 		),
 	)
 
+	mux.Handle("DELETE /tracks/{id}/generation",
+		middleware.AuthMiddleware(jwtSecret)(
+			middleware.RequireSubscription(userRepo)(
+				http.HandlerFunc(trackHandler.CancelGeneration),
+			),
+		),
+	)
+
 	mux.HandleFunc("GET /tracks/{id}/stream", trackHandler.Stream)
 
 	fs := http.FileServer(http.Dir("./public"))
